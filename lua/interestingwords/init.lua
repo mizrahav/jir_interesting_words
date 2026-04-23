@@ -523,4 +523,20 @@ m.setup = function(opt)
     end
 end
 
+
+m.ColorWord = function(word, partial)
+    if not word or #word == 0 then
+        return
+    end
+    if not partial then
+        word = '\\<' .. word .. '\\>'
+    end
+    word = get_reg_ex(word)
+    if m.words[word] then
+        uncolor(word)
+    else
+        color(word)
+    end
+end
+
 return m
