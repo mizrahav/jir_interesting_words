@@ -46,25 +46,42 @@ local get_reg_ex = function(word)
     end
 end
 
+
 local get_visual_selection = function()
     local lines
-    local start_row, start_col = fn.getpos("v")[2], fn.getpos("v")[3]
-    local end_row, end_col = fn.getpos(".")[2], fn.getpos(".")[3]
-    if end_row < start_row then
-        start_row, end_row = end_row, start_row
-        start_col, end_col = end_col, start_col
-    elseif end_row == start_row and end_col < start_col then
-        start_col, end_col = end_col, start_col
+    local mode = api.nvim_get_mode().mode
+
+    -- If already exited visual mode (lua callback), use marks and visualmode()
+    if mode ~= 'v' and mode ~= 'V' and mode ~= '\22' then
+        mode = fn.visualmode()
+        local start_row = fn.getpos("'<")[2] - 1
+        local start_col = fn.getpos("'<")[3] - 1
+        local end_row = fn.getpos("'>")[2] - 1
+        local end_col = fn.getpos("'>")[3]
+        if mode == 'V' then
+            lines = api.nvim_buf_get_text(0, start_row, 0, end_row, -1, {})
+        else
+            lines = api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
+        end
+    else
+        local start_row, start_col = fn.getpos("v")[2], fn.getpos("v")[3]
+        local end_row, end_col = fn.getpos(".")[2], fn.getpos(".")[3]
+        if end_row < start_row then
+            start_row, end_row = end_row, start_row
+            start_col, end_col = end_col, start_col
+        elseif end_row == start_row and end_col < start_col then
+            start_col, end_col = end_col, start_col
+        end
+        start_row = start_row - 1
+        start_col = start_col - 1
+        end_row = end_row - 1
+        if mode == 'V' then
+            lines = api.nvim_buf_get_text(0, start_row, 0, end_row, -1, {})
+        else
+            lines = api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
+        end
+        vim.cmd("normal! ")
     end
-    start_row = start_row - 1
-    start_col = start_col - 1
-    end_row = end_row - 1
-    if api.nvim_get_mode().mode == 'V' then
-        lines = api.nvim_buf_get_text(0, start_row, 0, end_row, -1, {})
-    elseif api.nvim_get_mode().mode == 'v' then
-        lines = api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
-    end
-    vim.cmd("normal! ")
     if lines == nil then
         return ""
     end
